@@ -1,0 +1,6 @@
+telethon>=1.36
+requests>=2.32
+python-dotenv>=1.0
+pandas>=2.2
+pyarrow>=16.1
+tqdm>=4.66
