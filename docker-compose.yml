@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  telegram-scraper:
+    build: .
+    container_name: telegram-scraper
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+    restart: always
