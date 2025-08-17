@@ -6,4 +6,5 @@ services:
     env_file: .env
     volumes:
       - ./data:/app/data
+      - ./sessions:/app/sessions
     restart: always

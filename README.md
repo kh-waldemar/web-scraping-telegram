@@ -31,6 +31,27 @@ cp .env.example .env
 | `STATE_BACKEND` | Currently only `file` is implemented |
 | `STATE_FILE` | Path to JSON file storing last message IDs |
 
+## Авторизація в Telegram
+
+Перед запуском сервісу потрібно один раз згенерувати session-файл для Telethon:
+
+1. Скопіюйте `.env.example` в `.env` та вкажіть значення `TG_API_ID`, `TG_API_HASH` і `TG_USERNAME=anon`.
+2. Запустіть локально (поза Docker):
+
+   ```bash
+   python scripts/create_session.py
+   ```
+
+   Після введення коду підтвердження в каталозі `sessions/` з'явиться файл `anon.session`.
+3. Переконайтеся, що `anon.session` знаходиться в директорії `sessions/` репозиторію.
+4. Запустіть контейнер:
+
+   ```bash
+   docker compose up -d
+   ```
+
+Скрипт `scripts/create_session.py` потрібно запускати лише один раз для генерації сесії.
+
 ## Quick start (Docker)
 
 ```bash
