@@ -41,8 +41,10 @@ def register_handlers(client, config: Config) -> None:
             "message_id": msg.id,
             "author": msg.post_author,
             "views": msg.views,
+            # ReactionCount stores the emoji in r.reaction.emoticon when available
             "reactions": " ".join(
-                f"{r.emoticon} {r.count}" for r in getattr(msg.reactions, "results", [])
+                f"{getattr(r.reaction, 'emoticon', str(r.reaction))} {r.count}"
+                for r in getattr(msg.reactions, "results", [])
             ),
             "shares": msg.forwards,
             "media": msg.media is not None,
