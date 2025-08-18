@@ -12,8 +12,6 @@ from dotenv import load_dotenv
 class Config:
     api_id: int
     api_hash: str
-    phone: str
-    username: str
     channels: List[str]
     webhook_url: str
     http_timeout: int
@@ -40,8 +38,6 @@ def load_config(env_file: str = ".env") -> Config:
     return Config(
         api_id=int(_require("TG_API_ID")),
         api_hash=_require("TG_API_HASH"),
-        phone=_require("TG_PHONE"),
-        username=_require("TG_USERNAME").lstrip("@"),
         channels=channels,
         webhook_url=_require("N8N_WEBHOOK_URL"),
         http_timeout=int(os.getenv("HTTP_TIMEOUT", "10")),

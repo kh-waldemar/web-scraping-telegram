@@ -20,8 +20,6 @@ cp .env.example .env
 |----------|-------------|
 | `TG_API_ID` | Telegram API ID |
 | `TG_API_HASH` | Telegram API hash |
-| `TG_PHONE` | Phone number in international format |
-| `TG_USERNAME` | Session name without `@` |
 | `TG_CHANNELS` | Comma separated list of channels, e.g. `@group1,@group2` |
 | `N8N_WEBHOOK_URL` | Full URL of n8n webhook |
 | `HTTP_TIMEOUT` | HTTP request timeout in seconds |
@@ -35,22 +33,21 @@ cp .env.example .env
 
 Перед запуском сервісу потрібно один раз згенерувати session-файл для Telethon:
 
-1. Скопіюйте `.env.example` в `.env` та вкажіть значення `TG_API_ID`, `TG_API_HASH` і `TG_USERNAME=anon`.
-2. Запустіть локально (поза Docker):
+1. Скопіюйте `.env.example` в `.env` та вкажіть значення `TG_API_ID` і `TG_API_HASH`.
+2. Виконайте команду:
 
    ```bash
-   python scripts/create_session.py
+   docker compose run --rm -it telegram-scraper python scripts/create_session.py
    ```
 
-   Після введення коду підтвердження в каталозі `sessions/` з'явиться файл `anon.session`.
-3. Переконайтеся, що `anon.session` знаходиться в директорії `sessions/` репозиторію.
-4. Запустіть контейнер:
+   Після введення коду підтвердження в каталозі `sessions/` з'явиться файл `zhito_admin.session`.
+3. Запустіть контейнер:
 
    ```bash
    docker compose up -d
    ```
 
-Скрипт `scripts/create_session.py` потрібно запускати лише один раз для генерації сесії.
+Контейнер автоматично використовує збережений файл `sessions/zhito_admin.session` і не вимагатиме повторного вводу коду.
 
 ## Quick start (Docker)
 

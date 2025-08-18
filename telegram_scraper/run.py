@@ -14,8 +14,8 @@ from .utils import setup_logging
 async def _runner() -> None:
     config = load_config()
     setup_logging(config.log_level)
-    client = get_client(config.username, config.api_id, config.api_hash)
-    await client.start(phone=config.phone)
+    client = get_client(config.api_id, config.api_hash)
+    await client.start()
     register_handlers(client, config)
     logging.getLogger(__name__).info("listening on %s", ",".join(config.channels))
     await client.run_until_disconnected()
