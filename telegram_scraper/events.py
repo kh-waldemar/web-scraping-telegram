@@ -7,8 +7,8 @@ from typing import Dict, Optional
 from telethon import events
 
 from .config import Config
-from .media import iter_media_items
-from .sender import send_file_to_n8n, send_to_n8n
+from .media import download_all_for_message
+from .sender import send_batch_to_n8n, send_to_n8n
 from .state import load_state, save_state
 from .utils import format_reaction, sanitize_text
 
@@ -52,6 +52,7 @@ def register_handlers(client, config: Config) -> None:
             "comments_list": [],
             "album_group_id": getattr(msg, "grouped_id", None),
             "has_media": has_media,
+            "media_count": 0,
         }
 
         state[chat_username] = msg.id
@@ -62,22 +63,14 @@ def register_handlers(client, config: Config) -> None:
             and has_media
             and config.media_send_mode == "multipart"
         ):
-            async for meta in iter_media_items(
+            file_items = await download_all_for_message(
                 client, msg, config.media_dir, config.media_max_mb
-            ):
-                enriched = payload | {
-                    "media_filename": meta["filename"],
-                    "media_mimetype": meta["mimetype"],
-                    "media_filesize": meta["filesize"],
-                }
-                send_file_to_n8n(
-                    enriched,
-                    meta["file_path"],
-                    meta["filename"],
-                    meta["mimetype"],
-                    config,
-                )
+            )
+            payload["media_count"] = len(file_items)
+            send_batch_to_n8n(payload, file_items, config)
         else:
+            if has_media:
+                payload["media_count"] = 1
             send_to_n8n(payload, config)
 
     logger.info("subscribed to %s", ",".join(config.channels))
