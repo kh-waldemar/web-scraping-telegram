@@ -72,8 +72,11 @@ python -m telegram_scraper.run
 2. Запустіть одноразовий експорт:
 
    ```bash
-   docker compose run --rm telegram-scraper python -m telegram_scraper.scrape_thread
+   docker compose run --rm telegram-scraper python -m telegram_scraper.scrape_thread --delay 5
    ```
+
+   Параметр `--delay` задає затримку між відправкою повідомлень на вебхук (у секундах).
+   За замовчуванням використовується 3 секунди.
 
 ## Updating
 
