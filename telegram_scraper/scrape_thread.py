@@ -34,8 +34,10 @@ async def scrape_thread(config: Config, delay: float) -> None:
                     "message_id": msg.id,
                     "author": getattr(msg, "post_author", None),
                     "views": getattr(msg, "views", None),
+                    # ReactionCount stores the emoji in r.reaction.emoticon when available
                     "reactions": " ".join(
-                        f"{r.emoticon} {r.count}" for r in getattr(msg.reactions, "results", [])
+                        f"{getattr(r.reaction, 'emoticon', str(r.reaction))} {r.count}"
+                        for r in getattr(msg.reactions, "results", [])
                     ),
                     "shares": getattr(msg, "forwards", None),
                     "media": bool(msg.media),
