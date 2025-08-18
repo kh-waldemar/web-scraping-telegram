@@ -21,6 +21,10 @@ class Config:
     state_backend: str
     state_file: str
     thread_message_id: int | None
+    media_download: bool
+    media_dir: str
+    media_max_mb: int
+    media_send_mode: str
 
 
 def _require(name: str) -> str:
@@ -39,7 +43,7 @@ def load_config(env_file: str = ".env") -> Config:
     thread_env = os.getenv("THREAD_MESSAGE_ID")
     thread_message_id = int(thread_env) if thread_env else None
 
-    return Config(
+    config = Config(
         api_id=int(_require("TG_API_ID")),
         api_hash=_require("TG_API_HASH"),
         channels=channels,
@@ -51,4 +55,11 @@ def load_config(env_file: str = ".env") -> Config:
         state_backend=os.getenv("STATE_BACKEND", "file"),
         state_file=os.getenv("STATE_FILE", ".state.json"),
         thread_message_id=thread_message_id,
+        media_download=os.getenv("MEDIA_DOWNLOAD", "1") == "1",
+        media_dir=os.getenv("MEDIA_DIR", "./data/media"),
+        media_max_mb=int(os.getenv("MEDIA_MAX_MB", "50")),
+        media_send_mode=os.getenv("MEDIA_SEND_MODE", "multipart").lower(),
     )
+
+    os.makedirs(config.media_dir, exist_ok=True)
+    return config

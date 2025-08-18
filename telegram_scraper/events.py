@@ -7,9 +7,10 @@ from typing import Dict, Optional
 from telethon import events
 
 from .config import Config
-from .sender import send_to_n8n
+from .media import iter_media_items
+from .sender import send_file_to_n8n, send_to_n8n
 from .state import load_state, save_state
-from .utils import sanitize_text
+from .utils import format_reaction, sanitize_text
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ def register_handlers(client, config: Config) -> None:
         if getattr(msg, "from_id", None) and hasattr(msg.from_id, "user_id"):
             author_id = msg.from_id.user_id  # type: ignore[assignment]
 
+        has_media = bool(msg.media)
         payload = {
             "group": chat_username,
             "author_id": author_id,
@@ -41,19 +43,41 @@ def register_handlers(client, config: Config) -> None:
             "message_id": msg.id,
             "author": msg.post_author,
             "views": msg.views,
-            # ReactionCount stores the emoji in r.reaction.emoticon when available
             "reactions": " ".join(
-                f"{getattr(r.reaction, 'emoticon', str(r.reaction))} {r.count}"
-                for r in getattr(msg.reactions, "results", [])
+                format_reaction(r) for r in getattr(msg.reactions, "results", [])
             ),
             "shares": msg.forwards,
-            "media": msg.media is not None,
+            "media": has_media,
             "url": f"https://t.me/{chat_username}/{msg.id}",
             "comments_list": [],
+            "album_group_id": getattr(msg, "grouped_id", None),
+            "has_media": has_media,
         }
 
         state[chat_username] = msg.id
         save_state(config.state_file, state)
-        send_to_n8n(payload, config)
+
+        if (
+            config.media_download
+            and has_media
+            and config.media_send_mode == "multipart"
+        ):
+            async for meta in iter_media_items(
+                client, msg, config.media_dir, config.media_max_mb
+            ):
+                enriched = payload | {
+                    "media_filename": meta["filename"],
+                    "media_mimetype": meta["mimetype"],
+                    "media_filesize": meta["filesize"],
+                }
+                send_file_to_n8n(
+                    enriched,
+                    meta["file_path"],
+                    meta["filename"],
+                    meta["mimetype"],
+                    config,
+                )
+        else:
+            send_to_n8n(payload, config)
 
     logger.info("subscribed to %s", ",".join(config.channels))

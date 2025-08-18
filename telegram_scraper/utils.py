@@ -5,6 +5,11 @@ import logging
 from typing import Optional
 
 
+def format_reaction(r) -> str:
+    """Format a Telethon reaction count safely."""
+    return f"{getattr(getattr(r, 'reaction', None), 'emoticon', str(getattr(r, 'reaction', '')))} {r.count}"
+
+
 def setup_logging(level: str) -> None:
     """Configure logging with a uniform format."""
     numeric_level = getattr(logging, level.upper(), logging.INFO)
