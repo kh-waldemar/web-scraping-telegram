@@ -88,11 +88,18 @@ python -m telegram_scraper.run
 - `MEDIA_MAX_MB` – максимальний розмір файлу в мегабайтах.
 - `MEDIA_SEND_MODE` – `multipart` або `json`.
 
-У режимі `multipart` для кожного повідомлення виконується один POST-запит:
-формується поле `payload` з JSON-рядком метаданих та масив `files[]` з усіма
-медіафайлами. У n8n Webhook слід увімкнути binary-режим і читати файли з
-`files[]`, а JSON діставати з поля `payload` (наприклад,
-`JSON.parse($binary.payload.data.toString())`).
+У режимі `multipart` для кожного повідомлення відправляється один `POST` із такими полями:
+
+- `payload` — текстове поле з JSON-рядком метаданих;
+- `files[]` — масив усіх медіафайлів.
+
+У n8n Webhook потрібно увімкнути binary-режим. Щоб дістати `payload`, прочитайте його як текст та розпарсіть, наприклад у Function/Set:
+
+```js
+const data = JSON.parse($binary.payload.data.toString());
+```
+
+Файли доступні у масиві `files[]`.
 
 Приклад для bulk-експорту:
 
