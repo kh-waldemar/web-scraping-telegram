@@ -72,7 +72,7 @@ def send_batch_to_n8n(
             if response.ok:
                 logger.info(
                     "sent batch %s with %s file(s) and payload",
-                    data.get("message_id"),
+                    data.get("album_group_id") or data.get("message_id"),
                     len(items),
                 )
                 return
