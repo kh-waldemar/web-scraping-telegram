@@ -5,7 +5,8 @@ import json
 import logging
 import os
 import time
-from typing import Dict, Iterable, Tuple
+from contextlib import ExitStack
+from typing import Dict, List, Tuple
 
 import requests
 
@@ -31,7 +32,7 @@ def send_to_n8n(data: Dict, config: Config) -> None:
 
 
 def send_batch_to_n8n(
-    data: Dict, file_items: Iterable[Tuple[str, str | None]], config: Config
+    data: Dict, file_items: List[Tuple[str, str | None]], config: Config
 ) -> None:
     """Send ``data`` and ``file_items`` to n8n in a single request.
 
@@ -47,32 +48,30 @@ def send_batch_to_n8n(
         return
 
     for attempt in range(1, config.http_max_retries + 1):
-        files = []
-        handles = []
         try:
-            for path, mimetype in items:
-                fh = open(path, "rb")
-                handles.append(fh)
-                files.append(
-                    (
-                        "files[]",
+            with ExitStack() as stack:
+                files = []
+                for path, mimetype in items:
+                    fh = stack.enter_context(open(path, "rb"))
+                    files.append(
                         (
-                            os.path.basename(path),
-                            fh,
-                            mimetype or "application/octet-stream",
-                        ),
+                            "files[]",
+                            (
+                                os.path.basename(path),
+                                fh,
+                                mimetype or "application/octet-stream",
+                            ),
+                        )
                     )
+                response = requests.post(
+                    config.webhook_url,
+                    files=files,
+                    data={"payload": json.dumps(data)},
+                    timeout=config.http_timeout,
                 )
-            payload = {"payload": json.dumps(data)}
-            response = requests.post(
-                config.webhook_url,
-                files=files,
-                data=payload,
-                timeout=config.http_timeout,
-            )
             if response.ok:
                 logger.info(
-                    "sent batch %s with %s file(s)",
+                    "sent batch %s with %s file(s) and payload",
                     data.get("message_id"),
                     len(items),
                 )
@@ -82,12 +81,6 @@ def send_batch_to_n8n(
             )
         except Exception as exc:  # pragma: no cover - best effort
             logger.warning("error sending batch webhook: %s", exc)
-        finally:
-            for fh in handles:
-                try:
-                    fh.close()
-                except Exception:
-                    pass
         time.sleep(config.http_backoff_seconds * attempt)
 
 
