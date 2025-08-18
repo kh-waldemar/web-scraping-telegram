@@ -66,6 +66,15 @@ pip install -r requirements.txt
 python -m telegram_scraper.run
 ```
 
+## Експорт усіх повідомлень із теми (thread)
+
+1. Вкажіть `THREAD_MESSAGE_ID` у `.env` (наприклад `THREAD_MESSAGE_ID=418`).
+2. Запустіть одноразовий експорт:
+
+   ```bash
+   docker compose run --rm telegram-scraper python -m telegram_scraper.scrape_thread
+   ```
+
 ## Updating
 
 Pull the latest changes and rebuild:

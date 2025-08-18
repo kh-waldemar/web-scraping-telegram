@@ -20,6 +20,7 @@ class Config:
     log_level: str
     state_backend: str
     state_file: str
+    thread_message_id: int | None
 
 
 def _require(name: str) -> str:
@@ -35,6 +36,9 @@ def load_config(env_file: str = ".env") -> Config:
 
     channels = [c.strip().lstrip("@") for c in _require("TG_CHANNELS").split(",") if c.strip()]
 
+    thread_env = os.getenv("THREAD_MESSAGE_ID")
+    thread_message_id = int(thread_env) if thread_env else None
+
     return Config(
         api_id=int(_require("TG_API_ID")),
         api_hash=_require("TG_API_HASH"),
@@ -46,4 +50,5 @@ def load_config(env_file: str = ".env") -> Config:
         log_level=os.getenv("LOG_LEVEL", "INFO"),
         state_backend=os.getenv("STATE_BACKEND", "file"),
         state_file=os.getenv("STATE_FILE", ".state.json"),
+        thread_message_id=thread_message_id,
     )
