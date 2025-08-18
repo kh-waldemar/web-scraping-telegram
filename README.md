@@ -87,13 +87,14 @@ python -m telegram_scraper.run
 - `MEDIA_DIR` – локальна папка для збереження файлів.
 - `MEDIA_MAX_MB` – максимальний розмір файлу в мегабайтах.
 - `MEDIA_SEND_MODE` – `multipart` або `json`.
+- `ALBUM_DEBOUNCE_SEC` – затримка в секундах для збирання альбому перед відправкою.
 
 У режимі `multipart` для кожного повідомлення відправляється один `POST` із такими полями:
 
 - `payload` — текстове поле з JSON-рядком метаданих;
 - `files[]` — масив усіх медіафайлів.
 
-У n8n Webhook потрібно увімкнути binary-режим. Щоб дістати `payload`, прочитайте його як текст та розпарсіть, наприклад у Function/Set:
+У n8n Webhook потрібно увімкнути binary-режим, а поле **Field Name for Binary Data** вказати як `files[]`. Щоб дістати `payload`, прочитайте його як текст та розпарсіть, наприклад у Function/Set:
 
 ```js
 const data = JSON.parse($binary.payload.data.toString());

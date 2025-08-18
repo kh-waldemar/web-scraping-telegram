@@ -25,6 +25,7 @@ class Config:
     media_dir: str
     media_max_mb: int
     media_send_mode: str
+    album_debounce_sec: int
 
 
 def _require(name: str) -> str:
@@ -59,6 +60,7 @@ def load_config(env_file: str = ".env") -> Config:
         media_dir=os.getenv("MEDIA_DIR", "./data/media"),
         media_max_mb=int(os.getenv("MEDIA_MAX_MB", "50")),
         media_send_mode=os.getenv("MEDIA_SEND_MODE", "multipart").lower(),
+        album_debounce_sec=int(os.getenv("ALBUM_DEBOUNCE_SEC", "2")),
     )
 
     os.makedirs(config.media_dir, exist_ok=True)
