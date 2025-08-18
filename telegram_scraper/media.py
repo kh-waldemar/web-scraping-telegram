@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import AsyncIterator, Dict, Optional
+from typing import AsyncIterator, Dict, List, Optional, Tuple
 
 from telethon.tl.custom.message import Message
 
@@ -61,3 +61,13 @@ async def iter_media_items(
     meta = await download_one(client, msg, download_dir, max_mb)
     if meta:
         yield meta
+
+
+async def download_all_for_message(
+    client, msg: Message, download_dir: str, max_mb: int
+) -> List[Tuple[str, str | None]]:
+    """Download all media for ``msg`` and return list of path/mimetype pairs."""
+    results: List[Tuple[str, str | None]] = []
+    async for meta in iter_media_items(client, msg, download_dir, max_mb):
+        results.append((meta["file_path"], meta.get("mimetype")))
+    return results

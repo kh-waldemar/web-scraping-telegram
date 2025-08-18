@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
-from typing import Dict
+from typing import Dict, Iterable, Tuple
 
 import requests
 
@@ -26,6 +27,67 @@ def send_to_n8n(data: Dict, config: Config) -> None:
             logger.warning("webhook responded with %s: %s", response.status_code, response.text)
         except Exception as exc:  # pragma: no cover - best effort
             logger.warning("error sending webhook: %s", exc)
+        time.sleep(config.http_backoff_seconds * attempt)
+
+
+def send_batch_to_n8n(
+    data: Dict, file_items: Iterable[Tuple[str, str | None]], config: Config
+) -> None:
+    """Send ``data`` and ``file_items`` to n8n in a single request.
+
+    If ``file_items`` is empty the call falls back to ``send_to_n8n``. When
+    files are present they are sent as ``files[]`` fields in multipart/form-data
+    together with a ``payload`` field containing JSON metadata. The request uses
+    the same retry/backoff logic as :func:`send_to_n8n`.
+    """
+
+    items = list(file_items)
+    if not items:
+        send_to_n8n(data, config)
+        return
+
+    for attempt in range(1, config.http_max_retries + 1):
+        files = []
+        handles = []
+        try:
+            for path, mimetype in items:
+                fh = open(path, "rb")
+                handles.append(fh)
+                files.append(
+                    (
+                        "files[]",
+                        (
+                            os.path.basename(path),
+                            fh,
+                            mimetype or "application/octet-stream",
+                        ),
+                    )
+                )
+            payload = {"payload": json.dumps(data)}
+            response = requests.post(
+                config.webhook_url,
+                files=files,
+                data=payload,
+                timeout=config.http_timeout,
+            )
+            if response.ok:
+                logger.info(
+                    "sent batch %s with %s file(s)",
+                    data.get("message_id"),
+                    len(items),
+                )
+                return
+            logger.warning(
+                "webhook responded with %s: %s", response.status_code, response.text
+            )
+        except Exception as exc:  # pragma: no cover - best effort
+            logger.warning("error sending batch webhook: %s", exc)
+        finally:
+            for fh in handles:
+                try:
+                    fh.close()
+                except Exception:
+                    pass
         time.sleep(config.http_backoff_seconds * attempt)
 
 

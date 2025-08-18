@@ -7,8 +7,8 @@ from telethon.tl.types import Message
 
 from .client import get_client
 from .config import Config, load_config
-from .media import iter_media_items
-from .sender import send_file_to_n8n, send_to_n8n
+from .media import download_all_for_message
+from .sender import send_batch_to_n8n, send_to_n8n
 from .utils import format_reaction, sanitize_text, setup_logging
 
 log = logging.getLogger(__name__)
@@ -47,31 +47,23 @@ async def scrape_thread(config: Config, delay: float) -> None:
                     "mode": "bulk_thread_export",
                     "album_group_id": getattr(msg, "grouped_id", None),
                     "has_media": has_media,
+                    "media_count": 0,
                 }
                 if (
                     config.media_download
                     and has_media
                     and config.media_send_mode == "multipart"
                 ):
-                    async for meta in iter_media_items(
+                    file_items = await download_all_for_message(
                         client, msg, config.media_dir, config.media_max_mb
-                    ):
-                        enriched = data | {
-                            "media_filename": meta["filename"],
-                            "media_mimetype": meta["mimetype"],
-                            "media_filesize": meta["filesize"],
-                        }
-                        send_file_to_n8n(
-                            enriched,
-                            meta["file_path"],
-                            meta["filename"],
-                            meta["mimetype"],
-                            config,
-                        )
-                        await asyncio.sleep(delay)
+                    )
+                    data["media_count"] = len(file_items)
+                    send_batch_to_n8n(data, file_items, config)
                 else:
+                    if has_media:
+                        data["media_count"] = 1
                     send_to_n8n(data, config)
-                    await asyncio.sleep(delay)
+                await asyncio.sleep(delay)
             log.info(f"done thread {config.thread_message_id} in {chat}")
 
 
