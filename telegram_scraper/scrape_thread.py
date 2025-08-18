@@ -7,8 +7,9 @@ from telethon.tl.types import Message
 
 from .client import get_client
 from .config import Config, load_config
-from .sender import send_to_n8n
-from .utils import sanitize_text, setup_logging
+from .media import iter_media_items
+from .sender import send_file_to_n8n, send_to_n8n
+from .utils import format_reaction, sanitize_text, setup_logging
 
 log = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ async def scrape_thread(config: Config, delay: float) -> None:
         for chat in config.channels:
             log.info(f"scraping thread {config.thread_message_id} in {chat}")
             async for msg in iter_thread_messages(client, chat, config.thread_message_id):
+                has_media = bool(msg.media)
                 data = {
                     "group": chat.lstrip("@"),
                     "author_id": msg.sender_id,
@@ -34,20 +36,42 @@ async def scrape_thread(config: Config, delay: float) -> None:
                     "message_id": msg.id,
                     "author": getattr(msg, "post_author", None),
                     "views": getattr(msg, "views", None),
-                    # ReactionCount stores the emoji in r.reaction.emoticon when available
                     "reactions": " ".join(
-                        f"{getattr(r.reaction, 'emoticon', str(r.reaction))} {r.count}"
-                        for r in getattr(msg.reactions, "results", [])
+                        format_reaction(r) for r in getattr(msg.reactions, "results", [])
                     ),
                     "shares": getattr(msg, "forwards", None),
-                    "media": bool(msg.media),
+                    "media": has_media,
                     "url": f"https://t.me/{chat.lstrip('@')}/{msg.id}",
                     "comments_list": [],
                     "thread_message_id": config.thread_message_id,
                     "mode": "bulk_thread_export",
+                    "album_group_id": getattr(msg, "grouped_id", None),
+                    "has_media": has_media,
                 }
-                send_to_n8n(data, config)
-                await asyncio.sleep(delay)
+                if (
+                    config.media_download
+                    and has_media
+                    and config.media_send_mode == "multipart"
+                ):
+                    async for meta in iter_media_items(
+                        client, msg, config.media_dir, config.media_max_mb
+                    ):
+                        enriched = data | {
+                            "media_filename": meta["filename"],
+                            "media_mimetype": meta["mimetype"],
+                            "media_filesize": meta["filesize"],
+                        }
+                        send_file_to_n8n(
+                            enriched,
+                            meta["file_path"],
+                            meta["filename"],
+                            meta["mimetype"],
+                            config,
+                        )
+                        await asyncio.sleep(delay)
+                else:
+                    send_to_n8n(data, config)
+                    await asyncio.sleep(delay)
             log.info(f"done thread {config.thread_message_id} in {chat}")
 
 
