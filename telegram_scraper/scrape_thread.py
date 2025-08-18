@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import logging
 from typing import AsyncIterator
@@ -17,7 +18,7 @@ async def iter_thread_messages(client, chat: str, thread_msg_id: int) -> AsyncIt
         yield m
 
 
-async def scrape_thread(config: Config) -> None:
+async def scrape_thread(config: Config, delay: float) -> None:
     if not config.thread_message_id:
         raise ValueError("THREAD_MESSAGE_ID is not set; please add it to .env")
 
@@ -44,13 +45,23 @@ async def scrape_thread(config: Config) -> None:
                     "mode": "bulk_thread_export",
                 }
                 send_to_n8n(data, config)
+                await asyncio.sleep(delay)
             log.info(f"done thread {config.thread_message_id} in {chat}")
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--delay",
+        type=float,
+        default=3,
+        help="Delay between sending messages to the webhook in seconds",
+    )
+    args = parser.parse_args()
+
     config = load_config()
     setup_logging(config.log_level)
-    asyncio.run(scrape_thread(config))
+    asyncio.run(scrape_thread(config, args.delay))
 
 
 if __name__ == "__main__":
